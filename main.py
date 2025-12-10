@@ -47,10 +47,7 @@ class BadWordsCache:
     def contains(self, text: str) -> bool:
         """Проверяет, содержит ли текст запрещенные слова (whole word match)."""
         text_lower = text.lower()
-        return any(
-            re.search(r"\b" + re.escape(word) + r"\b", text_lower)
-            for word in self._words
-        )
+        return any(re.search(r'\b' + re.escape(word) + r'\b', text_lower) for word in self._words)
 
     def get_count(self) -> int:
         """Возвращает количество загруженных слов."""
@@ -61,7 +58,6 @@ bad_words_cache = BadWordsCache()
 
 
 # --- СЕРВИСНЫЕ КЛАССЫ (Dependency Inversion, Interface Segregation) ---
-
 
 class CommandHandler:
     """Базовый класс для обработки команд (Open-Closed Principle)."""
@@ -90,13 +86,9 @@ class AddWordCommandHandler(CommandHandler):
         try:
             if await db.add_bad_word(word):
                 await bad_words_cache.reload()
-                await message.answer(
-                    f"✅ Слово '{word}' добавлено в список запрещенных."
-                )
+                await message.answer(f"✅ Слово '{word}' добавлено в список запрещенных.")
             else:
-                await message.answer(
-                    f"❌ Не удалось добавить слово. Возможно, оно уже есть."
-                )
+                await message.answer(f"❌ Не удалось добавить слово. Возможно, оно уже есть.")
         except Exception as e:
             logging.error(f"Ошибка при добавлении слова: {e}")
             await message.answer("❌ Ошибка при добавлении слова.")
@@ -112,9 +104,7 @@ class RemoveWordCommandHandler(CommandHandler):
         try:
             if await db.remove_bad_word(word):
                 await bad_words_cache.reload()
-                await message.answer(
-                    f"✅ Слово '{word}' удалено из списка запрещенных."
-                )
+                await message.answer(f"✅ Слово '{word}' удалено из списка запрещенных.")
             else:
                 await message.answer(f"❌ Не удалось удалить слово.")
         except Exception as e:
@@ -134,9 +124,7 @@ class StatsCommandHandler(CommandHandler):
             text = "📊 **Топ пользователей по предупреждениям:**\n\n"
             for i, user in enumerate(top_users, 1):
                 name = (
-                    user.get("full_name")
-                    or user.get("username")
-                    or f"User_{user['user_id']}"
+                    user.get("full_name") or user.get("username") or f"User_{user['user_id']}"
                 )
                 warns = user.get("warning_count", 0)
                 text += f"{i}. {name} - {warns} ⚠️\n"
@@ -151,15 +139,11 @@ class CreateEventCommandHandler(CommandHandler):
     async def handle(self, message: types.Message) -> None:
         event_text = message.text.replace("/event", "").strip()
         if not event_text:
-            await message.answer(
-                "Укажите название события. Пример: /event Поход в кино"
-            )
+            await message.answer("Укажите название события. Пример: /event Поход в кино")
             return
 
         try:
-            event_id = await db.create_event(
-                title=event_text, created_by=message.from_user.id
-            )
+            event_id = await db.create_event(title=event_text, created_by=message.from_user.id)
 
             if not event_id:
                 await message.answer("❌ Не удалось создать событие.")
@@ -218,7 +202,9 @@ class UnwarnCommandHandler(CommandHandler):
             return
 
         if target_user.id in config.ADMIN_IDS:
-            await message.answer("❌ Нельзя снимать предупреждения с администраторов.")
+            await message.answer(
+                "❌ Нельзя снимать предупреждения с администраторов."
+            )
             return
 
         if target_user.is_bot:
@@ -259,11 +245,11 @@ class UserInfoCommandHandler(CommandHandler):
                 await message.answer("❌ Пользователь не найден в базе данных.")
                 return
 
-            last_active = stats.get("last_active", "Неизвестно")
+            last_active = stats.get('last_active', 'Неизвестно')
             if isinstance(last_active, datetime):
                 last_active = last_active.strftime("%Y-%m-%d %H:%M:%S")
 
-            joined_at = stats.get("joined_at", "Неизвестно")
+            joined_at = stats.get('joined_at', 'Неизвестно')
             if isinstance(joined_at, datetime):
                 joined_at = joined_at.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -271,20 +257,19 @@ class UserInfoCommandHandler(CommandHandler):
             text += f"**Имя:** {stats.get('full_name')}\n"
             text += f"**Username:** @{stats.get('username') or 'не указан'}\n"
             text += f"**ID:** `{stats.get('user_id')}`\n"
-            text += f"**Предупреждения:** {stats.get('warning_count', 0)}/{config.MAX_WARNINGS}\n"
+            text += (
+                f"**Предупреждения:** {stats.get('warning_count', 0)}/{config.MAX_WARNINGS}\n"
+            )
             text += f"**Последняя активность:** {last_active}\n"
             text += f"**Присоединился:** {joined_at}\n"
 
             await message.answer(text, parse_mode="Markdown")
         except Exception as e:
-            logging.error(
-                f"Ошибка при получении информации о пользователе {target_user.id}: {e}"
-            )
+            logging.error(f"Ошибка при получении информации о пользователе {target_user.id}: {e}")
             await message.answer("❌ Ошибка при получении информации о пользователе.")
 
 
 # --- РЕГИСТРАЦИЯ КОМАНД (DRY) ---
-
 
 @dp.message(Command("reload"), IsProtectedAdmin())
 async def cmd_reload(message: types.Message) -> None:
@@ -328,9 +313,8 @@ async def cmd_userinfo(message: types.Message) -> None:
 
 # --- МОДЕРАЦИЯ И САНКЦИИ ---
 
-
 class ModerationService:
-    """Сервис для модерации (Single Responsibility)."""
+    """Сервис для модерации."""
 
     async def apply_sanction(self, message: types.Message, reason: str) -> None:
         user = message.from_user
@@ -356,7 +340,7 @@ class ModerationService:
                 await bot.send_message(
                     message.chat.id,
                     f"🚫 Пользователь {user.full_name} был забанен.\n"
-                    f"Причина: {reason} ({warn_count}/{config.MAX_WARNINGS}).",
+                    f"Причина: {reason} ({warn_count}/{config.MAX_WARNINGS})."
                 )
                 await db.reset_warnings(user.id)
             else:
@@ -364,20 +348,19 @@ class ModerationService:
                     message.chat.id,
                     f"⚠️ {user.full_name}, нарушение!\n"
                     f"Причина: {reason}\n"
-                    f"Предупреждение {warn_count}/{config.MAX_WARNINGS}.",
+                    f"Предупреждение {warn_count}/{config.MAX_WARNINGS}."
                 )
         except TelegramBadRequest as e:
             logging.error(f"Не удалось применить санкции (Telegram ошибка): {e}")
             await bot.send_message(
                 message.chat.id,
-                f"⚠️ Не удалось применить санкции к {user.full_name}. Проверьте права бота.",
+                f"⚠️ Не удалось применить санкции к {user.full_name}. Проверьте права бота."
             )
         except Exception as e:
-            logging.error(
-                f"Не удалось применить санкции к {user.full_name} ({user.id}): {e}"
-            )
+            logging.error(f"Не удалось применить санкции к {user.full_name} ({user.id}): {e}")
             await bot.send_message(
-                message.chat.id, f"❌ Ошибка при применении санкций к {user.full_name}."
+                message.chat.id,
+                f"❌ Ошибка при применении санкций к {user.full_name}."
             )
 
     async def check_moderation(self, message: types.Message) -> None:
@@ -392,9 +375,7 @@ class ModerationService:
             return
 
         if bad_words_cache.contains(text):
-            await self.apply_sanction(
-                message, "Использование запрещенной лексики/агрессия"
-            )
+            await self.apply_sanction(message, "Использование запрещенной лексики/агрессия")
             return
 
 
@@ -407,7 +388,6 @@ async def moderation_handler(message: types.Message) -> None:
 
 
 # --- ПРИВЕТСТВИЕ НОВЫХ УЧАСТНИКОВ ---
-
 
 class WelcomeService:
     """Сервис для приветствия новых участников (KISS, Single Responsibility)."""
@@ -431,9 +411,7 @@ class WelcomeService:
             )
 
             try:
-                await bot.send_message(
-                    message.chat.id, welcome_message, parse_mode="Markdown"
-                )
+                await bot.send_message(message.chat.id, welcome_message, parse_mode="Markdown")
             except TelegramBadRequest as e:
                 logging.error(f"Не удалось отправить приветствие для {user.id}: {e}")
 
@@ -448,7 +426,6 @@ async def on_new_chat_members(message: types.Message) -> None:
 
 # --- ОБРАБОТЧИК ОШИБОК ---
 
-
 @dp.errors()
 async def error_handler(event, exception) -> bool:
     logging.error(f"Необработанная ошибка: {exception}", exc_info=True)
@@ -456,7 +433,6 @@ async def error_handler(event, exception) -> bool:
 
 
 # --- ЗАПУСК ---
-
 
 async def main() -> None:
     try:
@@ -468,14 +444,14 @@ async def main() -> None:
         return
 
     commands = [
-        types.BotCommand("reload", "Обновить список запрещенных слов"),
-        types.BotCommand("addword", "Добавить запрещенное слово"),
-        types.BotCommand("removeword", "Удалить запрещенное слово"),
-        types.BotCommand("stats", "Статистика модерации"),
-        types.BotCommand("event", "Создать событие"),
-        types.BotCommand("events", "Список событий"),
-        types.BotCommand("unwarn", "Снять предупреждение с пользователя"),
-        types.BotCommand("userinfo", "Информация о пользователе"),
+        types.BotCommand(command="reload", description="Обновить список запрещенных слов"),
+        types.BotCommand(command="addword", description="Добавить запрещенное слово"),
+        types.BotCommand(command="removeword", description="Удалить запрещенное слово"),
+        types.BotCommand(command="stats", description="Статистика модерации"),
+        types.BotCommand(command="event", description="Создать событие"),
+        types.BotCommand(command="events", description="Список событий"),
+        types.BotCommand(command="unwarn", description="Снять предупреждение с пользователя"),
+        types.BotCommand(command="userinfo", description="Информация о пользователе"),
     ]
     try:
         await bot.set_my_commands(commands)

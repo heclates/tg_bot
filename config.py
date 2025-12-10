@@ -1,10 +1,8 @@
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings
 
-
 class Settings(BaseSettings):
-    """Класс для загрузки конфигурации из переменных окружения."""
-
+    """ Класс для загрузки конфигурации из переменных окружения. """
     BOT_TOKEN: str
     SUPABASE_URL: HttpUrl
     SUPABASE_KEY: str
@@ -14,6 +12,7 @@ class Settings(BaseSettings):
     @field_validator("BOT_TOKEN")
     @classmethod
     def validate_bot_token(cls, v: str) -> str:
+        v = v.strip()  # Remove any leading/trailing whitespace
         if not v or len(v) < 20:
             raise ValueError("BOT_TOKEN должен быть валидным токеном Telegram бота")
         return v
@@ -49,10 +48,8 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-
 # Singleton instance
 config = Settings()
-
 
 # Top-level function for easy access
 def get_admins() -> list[int]:
