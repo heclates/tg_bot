@@ -3,9 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    """
-    Класс для загрузки конфигурации из переменных окружения.
-    """
+    """Класс для загрузки конфигурации из переменных окружения."""
 
     BOT_TOKEN: str
     SUPABASE_URL: HttpUrl
@@ -26,11 +24,9 @@ class Settings(BaseSettings):
         # Если уже список - возвращаем как есть
         if isinstance(v, list):
             return [int(x) if not isinstance(x, int) else x for x in v]
-
         # Если число - преобразуем в список с одним элементом
         if isinstance(v, int):
             return [v]
-
         # Если строка - парсим
         if isinstance(v, str):
             try:
@@ -40,7 +36,6 @@ class Settings(BaseSettings):
                 return ids
             except ValueError as e:
                 raise ValueError(f"Ошибка парсинга ADMIN_IDS: {e}")
-
         raise ValueError("ADMIN_IDS должен быть строкой, числом или списком")
 
     @field_validator("MAX_WARNINGS")
@@ -57,3 +52,9 @@ class Settings(BaseSettings):
 
 # Singleton instance
 config = Settings()
+
+
+# Top-level function for easy access
+def get_admins() -> list[int]:
+    """Возвращает список ID администраторов."""
+    return config.ADMIN_IDS
