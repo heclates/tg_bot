@@ -23,6 +23,15 @@ class Settings(BaseSettings):
     @field_validator("ADMIN_IDS", mode="before")
     @classmethod
     def parse_admin_ids(cls, v):
+        # Если уже список - возвращаем как есть
+        if isinstance(v, list):
+            return [int(x) if not isinstance(x, int) else x for x in v]
+
+        # Если число - преобразуем в список с одним элементом
+        if isinstance(v, int):
+            return [v]
+
+        # Если строка - парсим
         if isinstance(v, str):
             try:
                 ids = [int(x.strip()) for x in v.split(",") if x.strip()]
@@ -31,7 +40,8 @@ class Settings(BaseSettings):
                 return ids
             except ValueError as e:
                 raise ValueError(f"Ошибка парсинга ADMIN_IDS: {e}")
-        return v
+
+        raise ValueError("ADMIN_IDS должен быть строкой, числом или списком")
 
     @field_validator("MAX_WARNINGS")
     @classmethod
